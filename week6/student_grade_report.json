@@ -1,0 +1,79 @@
+{
+    "student_records": [
+        {
+            "name": "Alice",
+            "score": 85
+        },
+        {
+            "name": "Bob",
+            "score": 92
+        },
+        {
+            "name": "Charlie",
+            "score": 85
+        },
+        {
+            "name": "Diana",
+            "score": 78
+        },
+        {
+            "name": "Emma",
+            "score": 92
+        },
+        {
+            "name": "Frank",
+            "score": 88
+        }
+    ],
+    "statistics": {
+        "highest": 92,
+        "lowest": 78,
+        "average": 86.66666666666667,
+        "median": 86.5
+    },
+    "unique_scores": [
+        88,
+        92,
+        85,
+        78
+    ],
+    "grade_distribution": {
+        "85": 2,
+        "92": 2,
+        "78": 1,
+        "88": 1
+    },
+    "letter_grade_counts": {
+        "B": 3,
+        "A": 2,
+        "C": 1
+    },
+    "above_average": [
+        {
+            "name": "Bob",
+            "score": 92
+        },
+        {
+            "name": "Emma",
+            "score": 92
+        },
+        {
+            "name": "Frank",
+            "score": 88
+        }
+    ],
+    "below_average": [
+        {
+            "name": "Alice",
+            "score": 85
+        },
+        {
+            "name": "Charlie",
+            "score": 85
+        },
+        {
+            "name": "Diana",
+            "score": 78
+        }
+    ]
+}
