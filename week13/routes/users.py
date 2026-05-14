@@ -1,85 +1,110 @@
+import sys, os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from fastapi import APIRouter, HTTPException
+from schemas import UserCreate, UserUpdate
 import json
-import os
-from fastapi import APIRouter, HTTPException, Query
-from schema import User, UserCreate
 
 router = APIRouter()
 
-USERS_FILE = "users.json"
+FILE_NAME = "users.txt"
 
 
-def read_users() -> list[dict]:
-    if not os.path.exists(USERS_FILE):
-        return []
-    with open(USERS_FILE, "r") as f:
-        content = f.read().strip()
-        if not content:
-            return []
-        return json.loads(content)
+def load_users():
+    users = []
+
+    if not os.path.exists(FILE_NAME):
+        return users
+
+    try:
+        with open(FILE_NAME, "r", encoding="utf-8") as file:
+            for line in file:
+                line = line.strip()
+                if line:
+                    users.append(json.loads(line))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error reading file: {str(e)}")
+
+    return users
 
 
-def write_users(users: list[dict]) -> None:
-    with open(USERS_FILE, "w") as f:
-        json.dump(users, f, indent=2)
+def save_users(users):
+    try:
+        with open(FILE_NAME, "w", encoding="utf-8") as file:
+            for user in users:
+                file.write(json.dumps(user) + "\n")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error writing file: {str(e)}")
 
 
-def get_next_id(users: list[dict]) -> int:
+def get_next_id(users):
     if not users:
         return 1
-    return max(u["id"] for u in users) + 1
+    return max(user["id"] for user in users) + 1
 
 
+@router.post("/", status_code=201)
+def create_user(user: UserCreate):
+    users = load_users()
 
-@router.get("/search")
-def search_users(q: str = Query(..., description="Search term for user name")):
-    users = read_users()
-    results = [u for u in users if q.lower() in u["name"].lower()]
-    return results
+    new_user = {
+        "id": get_next_id(users),
+        "name": user.name,
+        "email": user.email,
+        "age": user.age
+    }
+
+    users.append(new_user)
+    save_users(users)
+
+    return {"message": "User created successfully!", "user": new_user}
 
 
 @router.get("/")
 def get_all_users():
-    return read_users()
+    return load_users()
 
 
-@router.get("/{user_id}")
-def get_user_by_id(user_id: int):
-    users = read_users()
+@router.get("/search")
+def search_users(q: str):
+    users = load_users()
+    matches = [user for user in users if q.lower() in user["name"].lower()]
+    return matches
+
+
+@router.get("/{id}")
+def get_user_by_id(id: int):
+    users = load_users()
+
     for user in users:
-        if user["id"] == user_id:
+        if user["id"] == id:
             return user
-    raise HTTPException(status_code=404, detail=f"User with id {user_id} is not found")
+
+    raise HTTPException(status_code=404, detail="User not found!")
 
 
-@router.post("/", status_code=201)
-def create_user(user_data: UserCreate):
-    users = read_users()
-    new_user = {
-        "id": get_next_id(users),
-        "name": user_data.name,
-        "age": user_data.age,
-    }
-    users.append(new_user)
-    write_users(users)
-    return new_user
+@router.put("/{id}")
+def update_user(id: int, updated_user: UserCreate):
+    users = load_users()
+
+    for user in users:
+        if user["id"] == id:
+            user["name"] = updated_user.name
+            user["email"] = updated_user.email
+            user["age"] = updated_user.age
+            save_users(users)
+            return {"message": "User updated successfully!", "user": user}
+
+    raise HTTPException(status_code=404, detail="User not found!")
 
 
-@router.put("/{user_id}")
-def update_user(user_id: int, user_data: UserCreate):
-    users = read_users()
-    for i, user in enumerate(users):
-        if user["id"] == user_id:
-            users[i] = {"id": user_id, "name": user_data.name, "age": user_data.age}
-            write_users(users)
-            return users[i]
-    raise HTTPException(status_code=404, detail=f"User with id {user_id} is not found")
+@router.delete("/{id}")
+def delete_user(id: int):
+    users = load_users()
 
+    for user in users:
+        if user["id"] == id:
+            users.remove(user)
+            save_users(users)
+            return {"message": f"User {id} deleted successfully!"}
 
-@router.delete("/{user_id}")
-def delete_user(user_id: int):
-    users = read_users()
-    updated_users = [u for u in users if u["id"] != user_id]
-    if len(updated_users) == len(users):
-        raise HTTPException(status_code=404, detail=f"User with id {user_id} is not found")
-    write_users(updated_users)
-    return {"message": f"User {user_id} is deleted successfully!"}
+    raise HTTPException(status_code=404, detail="User not found!")

@@ -1,10 +1,15 @@
+import sys, os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from schemas import UserCreate, UserUpdate
 from fastapi import APIRouter, HTTPException
-from schema import UserCreate, UserUpdate
 from user_store import UserStore
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+FILE_NAME = os.path.join(BASE_DIR, "users.txt")
+
 
 router = APIRouter()
 
-store = UserStore("users.txt")
+store = UserStore(FILE_NAME)
 
 
 def get_next_id(users):
@@ -17,7 +22,7 @@ def get_next_id(users):
 def create_user(user: UserCreate):
     users = store.load()
     new_user = {
-        'id': get_next_id(users),
+        "id": max([u["id"] for u in users], default=0) + 1,
         'name': user.name,
         'email': user.email,
         'age': user.age
